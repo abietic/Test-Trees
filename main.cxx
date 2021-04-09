@@ -20,17 +20,29 @@ int main(int argc, char **argv)
         count++;
     }
     std::cout << count << " data inserted." << std::endl;
-    for(auto it = rev_bst.iterator(); it.has_next();){
+    for (auto it = rev_bst.iterator(); it.has_next();)
+    {
         it.next();
         // std::cout << it.get()->key << ' ' << it.get()->val << std::endl;
-        // bst.del(it.get()->val);
+        // if (count == 9989)
+        //     std::cout << "Error is going to happen." << std::endl;
+        bst.del(it.get()->val);
+        // if (!bst.sanity_check())
+        // {
+        //     std::cout << "The tree has broken. " << count << std::endl;
+        // }
+        // else
+        // {
+        //     std::cout << "Still working." << count << std::endl;
+        // }
         count--;
     }
-    std::cout << "rev_bst size: " << 10000-count << std::endl;
-    for(auto it = bst.iterator(); it.has_next();){
+    std::cout << "rev_bst size: " << 10000 - count << std::endl;
+    for (auto it = bst.iterator(); it.has_next();)
+    {
         it.next();
         // std::cout << it.get()->key << ' ' << it.get()->val << std::endl;
     }
-    std::cout << bst.sanity_check() << ' ' << rev_bst.sanity_check() << std::endl;
+    // std::cout << bst.sanity_check() << ' ' << rev_bst.sanity_check() << std::endl;
     return 0;
 }

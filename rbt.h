@@ -98,12 +98,18 @@ public:
     };
 
 public:
+    void del(const Key &k)
+    {
+        _del(k);
+    }
     bool sanity_check()
     {
-        if (check(root)) {
+        if (check(root))
+        {
             int64_t black_height = black_balanced(root);
-            if (black_height >= 0) {
-                std::cout << "Tree black height is: " << black_height << std::endl;
+            if (black_height >= 0)
+            {
+                // std::cout << "Tree black height is: " << black_height << std::endl;
                 return true;
             }
             return false;
@@ -182,7 +188,7 @@ public:
         {
             if (cur->key == k)
             {
-                std::cout << "Duplicated key: " << k << " cover it with value: " << v << std::endl;
+                // std::cout << "Duplicated key: " << k << " cover it with value: " << v << std::endl;
                 cur->val = v;
                 return;
             }
@@ -348,10 +354,6 @@ private:
             root->is_red = false;
         }
     }
-    void del(const Key &k)
-    {
-    }
-
 private:
     bool check(Node *r)
     {
@@ -379,28 +381,221 @@ private:
         }
         return check(left) && check(right);
     }
-    int64_t black_balanced(Node *r) {
-        if (!r) {
+    int64_t black_balanced(Node *r)
+    {
+        if (!r)
+        {
             return 0;
         }
         Node *left = r->left, *right = r->right;
-        if (left == nullptr && right == nullptr) {
+        if (left == nullptr && right == nullptr)
+        {
             return 1;
         }
-        int64_t rt =  black_balanced(right);
-        if (left && left->is_red) {
+        int64_t rt = black_balanced(right);
+        if (left && left->is_red)
+        {
             int64_t ll = black_balanced(left->left), lr = black_balanced(left->right);
-            if (ll >= 0 && lr >= 0 && rt >= 0 && ll == lr && ll == rt) {
+            if (ll >= 0 && lr >= 0 && rt >= 0 && ll == lr && ll == rt)
+            {
                 return ll + 1;
-            } else {
+            }
+            else
+            {
                 return -1;
             }
         }
         int64_t lt = black_balanced(left);
-        if (rt >= 0 && lt >= 0 && rt == lt) {
+        if (rt >= 0 && lt >= 0 && rt == lt)
+        {
             return lt + 1;
-        } else {
+        }
+        else
+        {
             return -1;
+        }
+    }
+    Node *find_min(Node *r, std::stack<Node *> &path_memo)
+    {
+        assert(r);
+        assert(path_memo.top()->left == r || path_memo.top()->right == r);
+        Node *cur = r;
+        while (cur->left)
+        {
+            path_memo.push(cur);
+            cur = cur->left;
+        }
+        return cur;
+    }
+    Node *find_max(Node *r, std::stack<Node *> &path_memo)
+    {
+        assert(r);
+        assert(path_memo.top()->left == r || path_memo.top()->right == r);
+        Node *cur = r;
+        while (cur->right)
+        {
+            path_memo.push(cur);
+            cur = cur->right;
+        }
+        return cur;
+    }
+    void del_leaf(Node *leaf, std::stack<Node *> &path_memo)
+    {
+        // when you are a leaf, you can't have right child
+        assert(!leaf->right);
+        Node *to_del = leaf, *ptr = leaf->left;
+        while (!path_memo.empty())
+        {
+            Node *parent = path_memo.top();
+            assert(parent->left == to_del || parent->right == to_del);
+            path_memo.pop();
+            Node *sib;
+            if (parent->left == to_del)
+            {
+                sib = parent->right;
+                if (to_del->is_red)
+                {
+                    to_del->is_red = false;
+                    parent->left = ptr;
+                    break;
+                }
+                assert(!sib->is_red);
+                if (sib->left && sib->left->is_red)
+                {
+                    sib->left->is_red = false;
+                    parent->left = sib->left;
+                    sib->left = parent->left->right;
+                    parent->left->right = parent->left->left;
+                    parent->left->left = ptr;
+                    std::swap(parent->key, parent->left->key);
+                    std::swap(parent->val, parent->left->val);
+                    break;
+                }
+                else
+                {
+                    parent->left = sib;
+                    parent->right = sib->right;
+                    sib->right = sib->left;
+                    sib->left = ptr;
+                    sib->is_red = true;
+                    std::swap(parent->key, parent->left->key);
+                    std::swap(parent->val, parent->left->val);
+                    to_del = parent;
+                    ptr = parent;
+                }
+            }
+            else
+            {
+                sib = parent->left;
+                // In this case sibling is not a sib but a parent part
+                if (sib->is_red)
+                {
+                    Node *parent_lp = sib;
+                    sib = parent_lp->right;
+                    if (sib->left && sib->left->is_red)
+                    {
+                        sib->left->is_red = false;
+                        parent_lp->right = sib->left;
+                        parent->right = sib;
+                        sib->left = sib->right;
+                        sib->right = ptr;
+                        std::swap(parent->key, parent->right->key);
+                        std::swap(parent->val, parent->right->val);
+                    }
+                    else
+                    {
+                        parent->left = parent_lp->left;
+                        parent->right = parent_lp;
+                        parent_lp->left = parent_lp->right;
+                        parent_lp->right = ptr;
+                        parent_lp->is_red = false;
+                        parent_lp->left->is_red = true;
+                        std::swap(parent->key, parent->right->key);
+                        std::swap(parent->val, parent->right->val);
+                    }
+                    break;
+                }
+                else
+                {
+                    if (sib->left && sib->left->is_red)
+                    {
+                        sib->left->is_red = false;
+                        parent->left = sib->left;
+                        parent->right = sib;
+                        sib->left = sib->right;
+                        sib->right = ptr;
+                        std::swap(parent->key, parent->right->key);
+                        std::swap(parent->val, parent->right->val);
+                        break;
+                    }
+                    else
+                    {
+                        sib->is_red = true;
+                        parent->right = ptr;
+                        to_del = parent;
+                        ptr = parent;
+                    }
+                }
+            }
+        }
+        delete leaf;
+    }
+    // first transform node to be deleted to leaf node then do the rebalance
+    void _del(const Key &k)
+    {
+        if (root == nullptr)
+        {
+            return;
+        }
+
+        if (root->key == k && root->left == nullptr && root->right == nullptr)
+        {
+            delete root;
+            root = nullptr;
+            return;
+        }
+        std::stack<Node *> path_memo;
+        Node *cur = root;
+        while (true)
+        {
+            if (!cur)
+            {
+                break;
+            }
+            if (cur->key == k)
+            {
+                if (cur->left == nullptr && cur->right == nullptr)
+                {
+                    del_leaf(cur, path_memo);
+                }
+                else if (cur->right)
+                {
+                    path_memo.push(cur);
+                    Node *leaf_to_del = find_min(cur->right, path_memo);
+                    cur->key = leaf_to_del->key;
+                    cur->val = leaf_to_del->val;
+                    del_leaf(leaf_to_del, path_memo);
+                }
+                else
+                {
+                    path_memo.push(cur);
+                    Node *leaf_to_del = find_max(cur->left, path_memo);
+                    cur->key = leaf_to_del->key;
+                    cur->val = leaf_to_del->val;
+                    del_leaf(leaf_to_del, path_memo);
+                }
+                break;
+            }
+            else if (cur->key > k)
+            {
+                path_memo.push(cur);
+                cur = cur->left;
+            }
+            else
+            {
+                path_memo.push(cur);
+                cur = cur->right;
+            }
         }
     }
 };
